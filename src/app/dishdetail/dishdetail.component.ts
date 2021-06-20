@@ -1,4 +1,4 @@
-import { Component, OnInit, Input,ViewChild } from '@angular/core';
+import { Component, OnInit, Input,ViewChild , Inject} from '@angular/core';
 import {ActivatedRoute, Params} from '@angular/router';
 import {Location} from '@angular/common';
 import {Dish} from '../shared/dish';
@@ -7,15 +7,28 @@ import { switchMap} from 'rxjs/operators';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { Feedback} from '../shared/feedback';
 import {Comment} from '../shared/comment';
+import {visibility, flyInOut, expand} from '../animations/app.animation';
 @Component({
   selector: 'app-dishdetail',
   templateUrl: './dishdetail.component.html',
-  styleUrls: ['./dishdetail.component.scss']
+  styleUrls: ['./dishdetail.component.scss'],
+  animations:[ 
+    visibility(),
+    flyInOut(),
+    expand()
+  ],
+  host:{
+    '[@flyInOut]':'true',
+    'style':'disblay : block;'
+  }
+
 })
 export class DishdetailComponent implements OnInit {
   @ViewChild('fform') feedbackFormDirective :any;
   @Input()
   dish: Dish;
+  visibility='shown';
+  errMess: string;
   dishcopy : Dish;
   commentData:Comment;
   dishIds:string[];
@@ -43,7 +56,9 @@ export class DishdetailComponent implements OnInit {
 
 
 
-  constructor(private fb: FormBuilder ,private dishservice: DishService, private Location:Location , private route :ActivatedRoute) { 
+  constructor(private fb: FormBuilder ,private dishservice: DishService,
+     private Location:Location , private route :ActivatedRoute,
+      @Inject('BaseURL') public BaseURL:any) { 
     this.createForm();
   }
   createForm() {
@@ -80,18 +95,29 @@ export class DishdetailComponent implements OnInit {
   }
   ngOnInit() {
     this.dishservice.getDishIds().subscribe((dishIds)=>this.dishIds=dishIds);
-    this.route.params.pipe(switchMap((params:Params)=>this.dishservice.getDish(params['id'])))
-    .subscribe(dish => { this.dish = dish;this.dishcopy=dish; this.setPrevNext(dish.id); });
+    this.route.params
+    .pipe(switchMap(
+    (params:Params)=>
+    {
+    this.visibility ='hidden';
+    return this.dishservice.getDish(params['id']);
+    }))
+    .subscribe(
+      dish => 
+      { 
+        this.dish = dish;
+        this.dishcopy=dish; 
+        this.setPrevNext(dish.id);
+        this.visibility='shown';},
+      errmess => this.errMess = <any>errmess);
+    ;
     
-    
-    // this.dishservice.getDish(id).then((dish)=>this.dish=dish);
-   // this.dishservice.getDish(id).subscribe((dish)=>this.dish=dish);
     }
     setPrevNext(dishId:string)
     {
       const index=this.dishIds.indexOf(dishId);
       this.prev=this.dishIds[(this.dishIds.length+index - 1)% this.dishIds.length];
-      this.prev=this.dishIds[(this.dishIds.length+index + 1)% this.dishIds.length];
+      this.next=this.dishIds[(this.dishIds.length+index + 1)% this.dishIds.length];
     }
 goBack(){
   this.Location.back();
@@ -99,11 +125,14 @@ goBack(){
 onSubmit() {
    this.commentData=this.feedbackForm.value;
    this.commentData.date=(new Date()).toString();
-   //console.log(this.commentData);
+  
   this.dishcopy.comments.push(this.commentData);
-  //this.dish.comments=this.dish.comments.push(this.commentData);
+  this.dishservice.putDish(this.dishcopy).subscribe(dish=>{
+    this.dish=dish;this.dishcopy=this.dish;
+  },
+  errmess=>{this.dish = null as any ; this.dishcopy = null as any;this.errMess=<any>errmess});
   this.feedback = this.feedbackForm.value;
- // console.log(this.feedback);
+
   this.feedbackForm.reset({
     author: '',
     rating: '',

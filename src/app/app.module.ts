@@ -33,7 +33,10 @@ import {LeaderService} from './services/leader.service';
 import { AppComponent } from './app.component';
 import { LoginComponent } from './login/login.component';
 import {MatSliderModule} from '@angular/material/slider';
-
+import { HttpClientModule } from '@angular/common/http';
+import { baseURL } from './shared/baseurl';
+import { ProcessHTTPMsgService } from './services/process-httpmsg.service';
+import { HighlightDirective } from './directives/highlight.directive';
 @NgModule({
   declarations: [
     AppComponent,
@@ -44,7 +47,8 @@ import {MatSliderModule} from '@angular/material/slider';
     HomeComponent,
     AboutComponent,
     ContactComponent,
-    LoginComponent
+    LoginComponent,
+    HighlightDirective
     ],
   imports: [
     BrowserModule,
@@ -65,12 +69,16 @@ import {MatSliderModule} from '@angular/material/slider';
     MatSlideToggleModule,
     MatSelectModule,
     MatProgressSpinnerModule,
-    MatSliderModule
+    MatSliderModule,
+    HttpClientModule,
+    
   ],
   providers: [
     DishService,
     PromotionService,
-    LeaderService
+    LeaderService,
+    ProcessHTTPMsgService,
+    {provide: 'BaseURL', useValue: baseURL}
   ],
   entryComponents: [
     LoginComponent
